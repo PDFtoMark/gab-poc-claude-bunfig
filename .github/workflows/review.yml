@@ -1,0 +1,28 @@
+name: review-test
+on:
+  pull_request_review:
+    types: [submitted]
+jobs:
+  t:
+    if: contains(github.event.review.body, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+      - name: Install Bun
+        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: 1.2.11
+      - name: Prepare action (mimics claude-code-action prepare step)
+        run: bun run fake-action/prepare.ts
+      - name: Result
+        if: always()
+        run: |
+          echo "--- git HEAD:"; git log -1 --oneline
+          echo "--- workspace:"; ls -la
+          echo "--- marker:"; cat preload-marker.txt 2>/dev/null || echo "NO MARKER"
+          echo "--- oidc env present:"; env | grep -c ACTIONS_ID_TOKEN_REQUEST || echo 0
